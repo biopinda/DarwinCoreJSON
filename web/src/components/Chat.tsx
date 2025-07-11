@@ -449,7 +449,7 @@ export default function Chat() {
                 }}
                 onChange={handleInputChange}
                 disabled={error != null || status === 'streaming'}
-                className="field-sizing-content min-h-20 border-slate-400"
+                className="field-sizing-content min-h-20 border-green-400"
               />
             </div>
           )}
