@@ -8,16 +8,17 @@ Always reference these instructions first and fallback to search or bash command
 
 ### Environment Setup and Dependencies
 - Install Node.js v20.19.4 or later: `curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash - && sudo apt-get install -y nodejs`
+- Install Bun (preferred package manager): `curl -fsSL https://bun.sh/install | bash && export PATH="$HOME/.bun/bin:$PATH"`
 - Install Deno v2.x for data processing scripts: `curl -fsSL https://deno.land/install.sh | sh && export PATH="$HOME/.deno/bin:$PATH"`
 - Install zip utility for data processing: `sudo apt update && sudo apt install zip`
 
 ### Core Build and Development Commands
 - **NEVER CANCEL any build or test commands** - All commands complete quickly (under 30 seconds)
 - Navigate to web application: `cd web/`
-- Install dependencies: `npm install` -- takes ~14 seconds. Set timeout to 120+ seconds.
-- Build application: `npm run build` -- takes ~13 seconds. Set timeout to 60+ seconds.
-- Run development server: `npm run dev` -- starts in <1 second on http://localhost:4321/
-- Run production server: `node dist/server/entry.mjs` -- NOT the npm preview command (requires Deno)
+- Install dependencies: `bun install` -- takes ~56 seconds. Set timeout to 120+ seconds. Alternative: `npm install` (~14 seconds)
+- Build application: `bun run build` -- takes ~16 seconds. Set timeout to 60+ seconds. Alternative: `npm run build` (~13 seconds)
+- Run development server: `bun run dev` -- starts in <1 second on http://localhost:4321/. Alternative: `npm run dev`
+- Run production server: `node dist/server/entry.mjs` -- NOT the npm/bun preview command (requires Deno)
 
 ### Data Processing Scripts (Deno)
 - Run flora data update: `deno run -A src/flora.ts [DWCA_URL]`
@@ -26,11 +27,11 @@ Always reference these instructions first and fallback to search or bash command
 - These scripts require MongoDB connection via MONGO_URI environment variable
 
 ### Web Application Commands
-- Start cache cron job: `npm run start-cache-cron`
-- Run dashboard cache job: `npm run cache-dashboard` (requires .env file)
-- Check formatting: `npx prettier --check src/` (will show formatting issues)
-- Fix formatting: `npx prettier --write src/` (ALWAYS run before committing)
-- TypeScript compilation check: `npx tsc --noEmit` (may show unused variable warnings)
+- Start cache cron job: `bun run start-cache-cron` or `npm run start-cache-cron`
+- Run dashboard cache job: `bun run cache-dashboard` (requires .env file) or `npm run cache-dashboard`
+- Check formatting: `bunx prettier --check src/` (will show formatting issues) or `npx prettier --check src/`
+- Fix formatting: `bunx prettier --write src/` (ALWAYS run before committing) or `npx prettier --write src/`
+- TypeScript compilation check: `bunx tsc --noEmit` (may show unused variable warnings) or `npx tsc --noEmit`
 
 ## Database Requirements
 - **CRITICAL**: Application requires MongoDB connection
@@ -40,9 +41,9 @@ Always reference these instructions first and fallback to search or bash command
 
 ## Validation and Testing
 - **No automated test suite available** - manual testing required
-- Always validate web application starts: Access http://localhost:4321/ after running `npm run dev`
-- Check TypeScript compilation: `npx tsc --noEmit` (may show warnings, but should not error)
-- Verify formatting: `npx prettier --check src/`
+- Always validate web application starts: Access http://localhost:4321/ after running `bun run dev` or `npm run dev`
+- Check TypeScript compilation: `bunx tsc --noEmit` (may show warnings, but should not error) or `npx tsc --noEmit`
+- Verify formatting: `bunx prettier --check src/` or `npx prettier --check src/`
 - **MANUAL VALIDATION SCENARIOS**:
   1. **Homepage**: http://localhost:4321/ should load with link to taxa search
   2. **Chat Interface**: http://localhost:4321/chat should load ChatBB AI interface
@@ -70,6 +71,8 @@ Always reference these instructions first and fallback to search or bash command
 │   │   ├── scripts/        # TypeScript utilities
 │   │   └── prompts/        # AI prompt configurations
 │   ├── package.json        # Node.js dependencies and scripts
+│   ├── bun.lock           # Bun lockfile (preferred package manager)
+│   ├── package-lock.json  # npm lockfile (alternative)
 │   └── Dockerfile          # Production container build
 └── tsconfig.json           # TypeScript configuration for Deno scripts
 ```
@@ -97,17 +100,17 @@ Always reference these instructions first and fallback to search or bash command
 
 ## Development Workflow
 1. Always work in the `web/` directory for application changes
-2. Run `npm install` after pulling changes
-3. Use `npm run dev` for development with hot reload
-4. Check formatting with `npx prettier --check src/`
-5. Build and test production: `npm run build && node dist/server/entry.mjs`
+2. Run `bun install` after pulling changes (or `npm install` as alternative)
+3. Use `bun run dev` for development with hot reload (or `npm run dev`)
+4. Check formatting with `bunx prettier --check src/` (or `npx prettier --check src/`)
+5. Build and test production: `bun run build && node dist/server/entry.mjs` (or `npm run build && node dist/server/entry.mjs`)
 6. Ensure MongoDB connection configured for full functionality testing
-7. Always validate TypeScript compilation: `npx tsc --noEmit`
+7. Always validate TypeScript compilation: `bunx tsc --noEmit` (or `npx tsc --noEmit`)
 
 ## Performance Notes
-- Web build completes in ~13 seconds
+- Web build completes in ~16 seconds with Bun (~13 seconds with npm)
 - Development server starts immediately (<1 second)
-- Dependency installation takes ~14 seconds
+- Dependency installation takes ~56 seconds with Bun (~14 seconds with npm)
 - Production server starts in <2 seconds
 - Data processing scripts timing depends on external data sources
-- Prettier formatting takes ~2 seconds for all files
+- Prettier formatting takes ~1-2 seconds for all files
