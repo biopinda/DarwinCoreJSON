@@ -5,6 +5,24 @@ import Papa from 'npm:papaparse'
 
 import { getEml, processaEml, processaZip, type DbIpt } from './lib/dwca.ts'
 
+/**
+ * Utility function to convert string fields to numbers with validation
+ * Keeps invalid values as original strings for backward compatibility
+ */
+function tryConvertToNumber(
+  obj: Record<string, any>, 
+  propName: string, 
+  validator?: (num: number) => boolean
+): void {
+  if (obj[propName] && typeof obj[propName] === 'string') {
+    const numValue = parseInt(obj[propName], 10)
+    if (!isNaN(numValue) && (!validator || validator(numValue))) {
+      obj[propName] = numValue
+    }
+    // Invalid values remain as original strings
+  }
+}
+
 type InsertManyParams = Parameters<typeof ocorrenciasCol.insertMany>
 async function safeInsertMany(
   collection: typeof ocorrenciasCol,
@@ -175,12 +193,26 @@ try {
         
         // Process year field: convert to numeric, keep invalid as string
         const processedData = { ...ocorrencia[1] }
-        if (processedData.year && typeof processedData.year === 'string') {
-          const yearNum = parseInt(processedData.year, 10)
-          if (!isNaN(yearNum) && yearNum > 0) {
-            processedData.year = yearNum
+        tryConvertToNumber(processedData, 'year', (num) => num > 0)
+        
+        // Process month field: convert to numeric, keep invalid as string
+        tryConvertToNumber(processedData, 'month', (num) => num >= 1 && num <= 12)
+        
+        // Process day field: convert to numeric, keep invalid as string
+        tryConvertToNumber(processedData, 'day', (num) => num >= 1 && num <= 31)
+        
+        // Process eventDate field: convert to BSON Date, keep invalid as string
+        if (processedData.eventDate && typeof processedData.eventDate === 'string') {
+          try {
+            const eventDateObj = new Date(processedData.eventDate)
+            // Check if the date is valid (not NaN) and not an invalid date
+            if (!isNaN(eventDateObj.getTime()) && eventDateObj.toString() !== 'Invalid Date') {
+              processedData.eventDate = eventDateObj
+            }
+            // Invalid dates remain as original strings
+          } catch (_error) {
+            // If parsing fails, keep as original string
           }
-          // Invalid years remain as original strings
         }
         
         return {
