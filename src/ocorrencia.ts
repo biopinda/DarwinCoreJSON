@@ -5,6 +5,24 @@ import Papa from 'npm:papaparse'
 
 import { getEml, processaEml, processaZip, type DbIpt } from './lib/dwca.ts'
 
+/**
+ * Utility function to convert string fields to numbers with validation
+ * Keeps invalid values as original strings for backward compatibility
+ */
+function tryConvertToNumber(
+  obj: Record<string, any>, 
+  propName: string, 
+  validator?: (num: number) => boolean
+): void {
+  if (obj[propName] && typeof obj[propName] === 'string') {
+    const numValue = parseInt(obj[propName], 10)
+    if (!isNaN(numValue) && (!validator || validator(numValue))) {
+      obj[propName] = numValue
+    }
+    // Invalid values remain as original strings
+  }
+}
+
 type InsertManyParams = Parameters<typeof ocorrenciasCol.insertMany>
 async function safeInsertMany(
   collection: typeof ocorrenciasCol,
@@ -175,31 +193,13 @@ try {
         
         // Process year field: convert to numeric, keep invalid as string
         const processedData = { ...ocorrencia[1] }
-        if (processedData.year && typeof processedData.year === 'string') {
-          const yearNum = parseInt(processedData.year, 10)
-          if (!isNaN(yearNum) && yearNum > 0) {
-            processedData.year = yearNum
-          }
-          // Invalid years remain as original strings
-        }
+        tryConvertToNumber(processedData, 'year', (num) => num > 0)
         
         // Process month field: convert to numeric, keep invalid as string
-        if (processedData.month && typeof processedData.month === 'string') {
-          const monthNum = parseInt(processedData.month, 10)
-          if (!isNaN(monthNum) && monthNum >= 1 && monthNum <= 12) {
-            processedData.month = monthNum
-          }
-          // Invalid months remain as original strings
-        }
+        tryConvertToNumber(processedData, 'month', (num) => num >= 1 && num <= 12)
         
         // Process day field: convert to numeric, keep invalid as string
-        if (processedData.day && typeof processedData.day === 'string') {
-          const dayNum = parseInt(processedData.day, 10)
-          if (!isNaN(dayNum) && dayNum >= 1 && dayNum <= 31) {
-            processedData.day = dayNum
-          }
-          // Invalid days remain as original strings
-        }
+        tryConvertToNumber(processedData, 'day', (num) => num >= 1 && num <= 31)
         
         // Process eventDate field: convert to BSON Date, keep invalid as string
         if (processedData.eventDate && typeof processedData.eventDate === 'string') {
