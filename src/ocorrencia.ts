@@ -183,6 +183,38 @@ try {
           // Invalid years remain as original strings
         }
         
+        // Process month field: convert to numeric, keep invalid as string
+        if (processedData.month && typeof processedData.month === 'string') {
+          const monthNum = parseInt(processedData.month, 10)
+          if (!isNaN(monthNum) && monthNum >= 1 && monthNum <= 12) {
+            processedData.month = monthNum
+          }
+          // Invalid months remain as original strings
+        }
+        
+        // Process day field: convert to numeric, keep invalid as string
+        if (processedData.day && typeof processedData.day === 'string') {
+          const dayNum = parseInt(processedData.day, 10)
+          if (!isNaN(dayNum) && dayNum >= 1 && dayNum <= 31) {
+            processedData.day = dayNum
+          }
+          // Invalid days remain as original strings
+        }
+        
+        // Process eventDate field: convert to BSON Date, keep invalid as string
+        if (processedData.eventDate && typeof processedData.eventDate === 'string') {
+          try {
+            const eventDateObj = new Date(processedData.eventDate)
+            // Check if the date is valid (not NaN) and not an invalid date
+            if (!isNaN(eventDateObj.getTime()) && eventDateObj.toString() !== 'Invalid Date') {
+              processedData.eventDate = eventDateObj
+            }
+            // Invalid dates remain as original strings
+          } catch (_error) {
+            // If parsing fails, keep as original string
+          }
+        }
+        
         return {
           iptId: ipt.id,
           ipt: repositorio,
