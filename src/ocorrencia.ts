@@ -100,14 +100,47 @@ try {
   
   console.log('Indexes created successfully')
 
+  // Track failed IPT servers to skip resources from same server
+  const failedIpts = new Set<string>()
+  
+  // Extract base URL from IPT URL for grouping
+  const getIptBaseUrl = (url: string) => {
+    try {
+      const urlObj = new URL(url)
+      return `${urlObj.protocol}//${urlObj.host}`
+    } catch {
+      return url
+    }
+  }
+
   for (const { repositorio, kingdom, tag, url } of iptSources) {
   if (!repositorio || !tag) continue;
+  
+  // Check if this IPT server has already failed
+  const iptBaseUrl = getIptBaseUrl(url)
+  if (failedIpts.has(iptBaseUrl)) {
+    console.log(`Skipping ${repositorio}:${tag} - IPT server ${iptBaseUrl} already failed`)
+    continue
+  }
+  
   console.debug(`Processing ${repositorio}:${tag}\n${url}eml.do?r=${tag}`)
-  const eml = await getEml(`${url}eml.do?r=${tag}`).catch((error) => {
+  const eml = await getEml(`${url}eml.do?r=${tag}`, 10000).catch((error) => {
     if (error.name === 'Http' && error.message.includes('404')) {
       console.log(`EML resource ${repositorio}:${tag} no longer exists (404) - skipping`)
       return null
     }
+    
+    // If this is a timeout or connection error, mark the entire IPT as failed
+    if (error.message.includes('timeout') || 
+        error.message.includes('Connection') || 
+        error.message.includes('ECONNRESET') ||
+        error.message.includes('ENOTFOUND') ||
+        error.message.includes('ECONNREFUSED') ||
+        error.message.includes('AbortError')) {
+      console.log(`IPT server ${iptBaseUrl} appears to be offline - marking for skip`)
+      failedIpts.add(iptBaseUrl)
+    }
+    
     console.log('Erro baixando/processando eml', error.message)
     return null
   })
@@ -126,6 +159,18 @@ try {
       console.log(`Resource ${repositorio}:${tag} no longer exists (404) - skipping`)
       return null
     }
+    
+    // If this is a timeout or connection error, mark the entire IPT as failed
+    if (error.message.includes('timeout') || 
+        error.message.includes('Connection') || 
+        error.message.includes('ECONNRESET') ||
+        error.message.includes('ENOTFOUND') ||
+        error.message.includes('ECONNREFUSED') ||
+        error.message.includes('AbortError')) {
+      console.log(`IPT server ${iptBaseUrl} appears to be offline during archive download - marking for skip`)
+      failedIpts.add(iptBaseUrl)
+    }
+    
     throw error
   })
   if (!ocorrencias) continue
@@ -210,6 +255,14 @@ try {
     { $set: { _id, ...iptDb, tag, ipt: repositorio, kingdom } },
     { upsert: true }
   )
+  }
+
+  // Report failed IPTs
+  if (failedIpts.size > 0) {
+    console.log(`\nSummary: ${failedIpts.size} IPT server(s) were offline and skipped:`)
+    for (const iptUrl of failedIpts) {
+      console.log(`  - ${iptUrl}`)
+    }
   }
 
   console.log('Processing completed successfully')
