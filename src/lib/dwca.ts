@@ -343,14 +343,7 @@ export async function processaZip(
   try {
     await download(url, { file: "temp.zip", dir: ".temp" });
   } catch (error: any) {
-    // Handle 404 errors when IPT resources no longer exist
-    if (
-      error.name === "Http" &&
-      (error.message.includes("404") || error.message.includes("Not Found"))
-    ) {
-      throw error; // Re-throw to be handled by caller
-    }
-    throw error; // Re-throw any other errors
+    throw error; // Re-throw to be handled by caller
   }
 
   try {
