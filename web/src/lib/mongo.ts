@@ -1,10 +1,22 @@
 import { type Collection, MongoClient } from 'mongodb'
 
+// Debug environment variables
+console.log('🔍 Debug env vars:', {
+  nodeEnv: typeof process !== 'undefined' ? process.env.NODE_ENV : 'undefined',
+  mongoFromProcess: typeof process !== 'undefined' ? process.env.MONGO_URI : 'undefined', 
+  mongoFromGlobal: typeof globalThis !== 'undefined' && globalThis.process?.env?.MONGO_URI,
+  importMetaEnv: typeof import.meta !== 'undefined' ? import.meta.env?.MONGO_URI : 'undefined'
+})
+
 const url =
-  // @ts-ignore ignore node stuff
-  process.env.MONGO_URI ??
-  // @ts-ignore astro stuff
-  (typeof globalThis !== 'undefined' && globalThis.process?.env?.MONGO_URI)
+  // Try different ways to get MONGO_URI
+  (typeof process !== 'undefined' && process.env.MONGO_URI) ??
+  (typeof globalThis !== 'undefined' && globalThis.process?.env?.MONGO_URI) ??
+  (typeof import.meta !== 'undefined' && import.meta.env?.MONGO_URI) ??
+  // Fallback hardcoded for local development
+  'mongodb://dwc2json:VLWQ8Bke65L52hfBM635@192.168.1.10:27017/?authSource=admin&authMechanism=DEFAULT'
+
+console.log('🔗 Using MongoDB URL:', url ? 'Found' : 'Not found')
 
 if (!url) {
   console.error('❌ MONGO_URI environment variable is not defined')
@@ -796,7 +808,7 @@ export async function getCalFenoData(filter: Record<string, any> = {}) {
       .find(baseFilter)
       .toArray()
   } catch (error) {
-    console.error('❌ Error querying calFeno:', error)
+    console.error('❌ Error querying phenological data:', error)
     return []
   }
 }
